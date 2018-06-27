@@ -1,9 +1,9 @@
 package me.adhikasetyap.avidavi.main.core;
 
-import android.app.IntentService;
+import android.app.Service;
 import android.content.Intent;
-import android.hardware.Sensor;
-import android.hardware.SensorManager;
+import android.os.Binder;
+import android.os.IBinder;
 import android.support.annotation.Nullable;
 
 import com.intelligt.modbus.jlibmodbus.Modbus;
@@ -19,17 +19,14 @@ import com.intelligt.modbus.jlibmodbus.utils.FrameEventListener;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 
-public class ModbusSlaveService extends IntentService {
+public class ModbusSlaveService extends Service {
 
-    private SensorManager mSensorManager;
-    private Sensor mAccelerometer;
+    private final IBinder binder = new LocalBinder();
+
     private ModbusSlave slave;
 
-    public ModbusSlaveService() {
-        super("ModbusSlaveService");
-        mSensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
-        assert mSensorManager != null;
-        mAccelerometer = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+    public int testServiceComm(int a, int b) {
+        return a + b;
     }
 
     public void main() throws InterruptedException, ModbusIOException {
@@ -64,13 +61,9 @@ public class ModbusSlaveService extends IntentService {
         this.start();
     }
 
-    public void stop() {
-        try {
-            if (slave.isListening()) {
-                slave.shutdown();
-            }
-        } catch (ModbusIOException e) {
-            e.printStackTrace();
+    public void stop() throws ModbusIOException {
+        if (slave.isListening()) {
+            slave.shutdown();
         }
     }
 
@@ -95,8 +88,15 @@ public class ModbusSlaveService extends IntentService {
         }
     }
 
+    @Nullable
     @Override
-    protected void onHandleIntent(@Nullable Intent intent) {
+    public IBinder onBind(Intent intent) {
+        return binder;
+    }
 
+    public class LocalBinder extends Binder {
+        public ModbusSlaveService getService() {
+            return ModbusSlaveService.this;
+        }
     }
 }

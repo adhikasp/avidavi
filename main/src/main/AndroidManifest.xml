@@ -21,7 +21,7 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <!--<service android:name=".core.ModbusSlaveService" />-->
+        <service android:name=".core.ModbusSlaveService" />
     </application>
     <uses-permission-sdk-23 android:name="android.permission.INTERNET" />
 
