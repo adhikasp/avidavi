@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="me.adhikasetyap.avidavi.main">
+
+    <application>
+        <activity android:name=".HomePage">
+            <intent-filter android:order="1">
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.BROWSABLE" />
+                <category android:name="android.intent.category.DEFAULT" />
+
+                <data
+                    android:host="adhikasetyap.me"
+                    android:pathPattern="/avidavi/*"
+                    android:scheme="https" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <!--<service android:name=".core.ModbusSlaveService" />-->
+    </application>
+    <uses-permission-sdk-23 android:name="android.permission.INTERNET" />
+
+</manifest>
