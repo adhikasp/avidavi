@@ -1,5 +1,6 @@
 package me.adhikasetyap.avidavi.main;
 
+import android.app.Activity;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -8,7 +9,6 @@ import android.hardware.Sensor;
 import android.hardware.SensorManager;
 import android.os.Bundle;
 import android.os.IBinder;
-import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.widget.TextView;
 
@@ -16,7 +16,7 @@ import java.util.List;
 
 import me.adhikasetyap.avidavi.main.core.ModbusSlaveService;
 
-public class HomePage extends AppCompatActivity {
+public class HomePage extends Activity {
 
     private static final String TAG = HomePage.class.getName();
     private ModbusSlaveService modbusSlaveService;
@@ -26,8 +26,7 @@ public class HomePage extends AppCompatActivity {
             // Initialize the service
             // https://stackoverflow.com/questions/20594936/communication-between-activity-and-service
             modbusSlaveService = ((ModbusSlaveService.LocalBinder) iBinder).getService();
-            int result = modbusSlaveService.testServiceComm(5, 3);
-            Log.i(TAG, "Hasil = " + result);
+            modbusSlaveService.main();
         }
 
         @Override
@@ -48,7 +47,7 @@ public class HomePage extends AppCompatActivity {
         // Start a ModbusSlaveService
         // https://stackoverflow.com/questions/2334955/start-a-service-from-activity
         Intent startModbusSlaveIntent = new Intent(this, ModbusSlaveService.class);
-        bindService(startModbusSlaveIntent, modbusServiceConnection, Context.BIND_AUTO_CREATE);
+        startService(startModbusSlaveIntent);
     }
 
     public void printSensorList(SensorManager sensorManager, TextView textView) {
