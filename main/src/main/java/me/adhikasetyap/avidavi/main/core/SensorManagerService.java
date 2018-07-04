@@ -1,40 +1,51 @@
 package me.adhikasetyap.avidavi.main.core;
 
+import android.app.Service;
+import android.content.Intent;
 import android.hardware.Sensor;
-import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
-import android.util.Log;
+import android.os.Binder;
+import android.os.IBinder;
+import android.support.annotation.Nullable;
 
-public class SensorManagerService implements SensorEventListener {
+import me.adhikasetyap.avidavi.main.core.listener.ProximitySensorListener;
+
+public class SensorManagerService extends Service {
+
+    private final LocalBinder binder = new LocalBinder();
+    private SensorManager sensorManager;
+    private Sensor proximitySensor;
+    private SensorEventListener proximitySensorListener;
+
     @Override
-    public final void onAccuracyChanged(Sensor sensor, int accuracy) {
-        // Do something here if sensor accuracy changes.
+    public void onCreate() {
+        sensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
+
+        proximitySensor = sensorManager.getDefaultSensor(Sensor.TYPE_PROXIMITY);
+        proximitySensorListener = new ProximitySensorListener();
+
+        sensorManager.registerListener(
+                proximitySensorListener,
+                proximitySensor,
+                SensorManager.SENSOR_DELAY_NORMAL);
     }
 
     @Override
-    public final void onSensorChanged(SensorEvent event) {
-        float[] mGravity = new float[0];
-        float[] mGeomagnetic = new float[0];
+    public void onDestroy() {
+        // TODO unbind all sensor listener
+        sensorManager.unregisterListener(proximitySensorListener);
+    }
 
-        if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER)
-            mGravity = event.values;
-        if (event.sensor.getType() == Sensor.TYPE_MAGNETIC_FIELD)
-            mGeomagnetic = event.values;
+    @Nullable
+    @Override
+    public IBinder onBind(Intent intent) {
+        return binder;
+    }
 
-        if (mGravity != null && mGeomagnetic != null) {
-            float R[] = new float[9];
-            float I[] = new float[9];
-
-            boolean success = SensorManager.getRotationMatrix(R, I, mGravity, mGeomagnetic);
-            if (success) {
-                float orientation[] = new float[3];
-                SensorManager.getOrientation(R, orientation);
-                Log.i("MY_DEBUG", "Reading device rotation angle: azimuth %f, pitch %f, roll %f");
-//                azimut = orientation[0]; // orientation contains: azimut, pitch and roll
-//                pitch = orientation[1];
-//                roll = orientation[2];
-            }
+    public class LocalBinder extends Binder {
+        SensorManagerService getService() {
+            return SensorManagerService.this;
         }
     }
 }

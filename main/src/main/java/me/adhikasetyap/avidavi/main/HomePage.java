@@ -1,14 +1,11 @@
 package me.adhikasetyap.avidavi.main;
 
 import android.app.Activity;
-import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
-import android.content.ServiceConnection;
 import android.hardware.Sensor;
 import android.hardware.SensorManager;
 import android.os.Bundle;
-import android.os.IBinder;
 import android.util.Log;
 import android.widget.TextView;
 
@@ -19,21 +16,6 @@ import me.adhikasetyap.avidavi.main.core.ModbusSlaveService;
 public class HomePage extends Activity {
 
     private static final String TAG = HomePage.class.getName();
-    private ModbusSlaveService modbusSlaveService;
-    private ServiceConnection modbusServiceConnection = new ServiceConnection() {
-        @Override
-        public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
-            // Initialize the service
-            // https://stackoverflow.com/questions/20594936/communication-between-activity-and-service
-            modbusSlaveService = ((ModbusSlaveService.LocalBinder) iBinder).getService();
-            modbusSlaveService.main();
-        }
-
-        @Override
-        public void onServiceDisconnected(ComponentName componentName) {
-
-        }
-    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
