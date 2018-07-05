@@ -5,6 +5,8 @@ import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.util.Log;
 
+import me.adhikasetyap.avidavi.main.core.utilities.Utilities;
+
 public class ProximitySensorListener implements SensorEventListener {
 
     private static final int SENSOR_SENSITIVITY = 1; // TODO make this user configurable
@@ -14,6 +16,7 @@ public class ProximitySensorListener implements SensorEventListener {
     public void onSensorChanged(SensorEvent sensorEvent) {
         if (sensorEvent.sensor.getType() == Sensor.TYPE_PROXIMITY) {
             Log.i(TAG, "Proximity sensor value: " + sensorEvent.values[0]);
+            Utilities.broadcastSensorData(Sensor.TYPE_PROXIMITY, sensorEvent.values[0]);
             if (sensorEvent.values[0] < SENSOR_SENSITIVITY) {
                 //near
                 Log.i(TAG, "Proximity sensor: near");
