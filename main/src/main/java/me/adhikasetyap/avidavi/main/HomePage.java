@@ -42,27 +42,6 @@ public class HomePage extends Activity {
     };
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_home_page);
-
-        TextView textView = findViewById(R.id.connection_status);
-        SensorManager sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
-        printSensorList(sensorManager);
-
-        // Start a ModbusSlaveService
-        // https://stackoverflow.com/questions/2334955/start-a-service-from-activity
-        Intent startModbusSlaveIntent = new Intent(this, ModbusSlaveService.class);
-        startModbusSlaveIntent.setAction(ACTION_CONNECT);
-        startModbusSlaveIntent.putExtra(EXTRA_SERVER_ADDRESS, "192.168.100.6");
-        startModbusSlaveIntent.putExtra(EXTRA_SERVER_PORT, 5020);
-
-        LocalBroadcastManager.getInstance(this).registerReceiver(
-                broadcastReceiver,
-                new IntentFilter(ACTION_CONNECTED));
-    }
-
-    @Override
     public void onDestroy() {
         super.onDestroy();
         LocalBroadcastManager.getInstance(this).unregisterReceiver(broadcastReceiver);
@@ -83,5 +62,27 @@ public class HomePage extends Activity {
                     .append(System.getProperty("line.separator"));
         }
         Log.i(TAG, sensorText.toString());
+    }
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_home_page);
+
+        TextView textView = findViewById(R.id.connection_status);
+        SensorManager sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
+        printSensorList(sensorManager);
+
+        // Start a ModbusSlaveService
+        // https://stackoverflow.com/questions/2334955/start-a-service-from-activity
+        Intent startModbusSlaveIntent = new Intent(this, ModbusSlaveService.class);
+        startModbusSlaveIntent.setAction(ACTION_CONNECT);
+        startModbusSlaveIntent.putExtra(EXTRA_SERVER_ADDRESS, "192.168.100.6");
+        startModbusSlaveIntent.putExtra(EXTRA_SERVER_PORT, 5020);
+        startService(startModbusSlaveIntent);
+
+        LocalBroadcastManager.getInstance(this).registerReceiver(
+                broadcastReceiver,
+                new IntentFilter(ACTION_CONNECTED));
     }
 }

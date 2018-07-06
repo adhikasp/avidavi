@@ -1,12 +1,14 @@
 package me.adhikasetyap.avidavi.main.core;
 
-import android.app.IntentService;
+import android.app.Service;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
+import android.os.Handler;
+import android.os.HandlerThread;
 import android.os.IBinder;
 import android.support.annotation.Nullable;
 import android.support.v4.content.LocalBroadcastManager;
@@ -19,9 +21,10 @@ import de.re.easymodbus.exceptions.ModbusException;
 import de.re.easymodbus.modbusclient.ModbusClient;
 import me.adhikasetyap.avidavi.main.core.utilities.Utilities;
 
+import static me.adhikasetyap.avidavi.main.core.utilities.Utilities.EXTRA_SENSOR_TYPE;
 import static me.adhikasetyap.avidavi.main.core.utilities.Utilities.EXTRA_SENSOR_VALUE;
 
-public class ModbusSlaveService extends IntentService {
+public class ModbusSlaveService extends Service {
 
     private static final String TAG = ModbusSlaveService.class.getName();
 
@@ -34,6 +37,8 @@ public class ModbusSlaveService extends IntentService {
     private ModbusClient client;
     private SensorManagerService sensorManagerService;
     private Boolean listening = false;
+    private HandlerThread handlerThread;
+    private Handler handler;
 
     private ServiceConnection sensorManagerConnection = new ServiceConnection() {
         @Override
@@ -45,29 +50,33 @@ public class ModbusSlaveService extends IntentService {
         public void onServiceDisconnected(ComponentName componentName) {
         }
     };
-
-    public ModbusSlaveService() {
-        super(ModbusSlaveService.class.getName());
-    }
-
     private BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
             if (listening) {
-                int value = (int) intent.getFloatExtra(EXTRA_SENSOR_VALUE, 0.0f);
-                new Thread(() -> {
+                String sensorType = intent.getStringExtra(EXTRA_SENSOR_TYPE);
+                int sensorValue = (int) intent.getFloatExtra(EXTRA_SENSOR_VALUE, 0.0f);
+                handler.post(() -> {
                     try {
                         // TODO change startingAddress based on sensor type
                         // TODO make address user configurable
                         // TODO refactor this to outside function
-                        client.WriteSingleRegister(1, value);
+                        Log.i(TAG, "Sending data to " + client.getipAddress());
+                        Log.i(TAG, "Sensor : " + sensorType);
+                        Log.i(TAG, "Value  : " + sensorValue);
+                        client.WriteSingleRegister(1, sensorValue);
                     } catch (ModbusException | IOException e) {
                         e.printStackTrace();
                     }
-                }).start();
+
+                });
             }
         }
     };
+
+    public ModbusSlaveService() {
+        super();
+    }
 
     public void startConnection(String serverAddress, int serverPort) {
         LocalBroadcastManager.getInstance(this).registerReceiver(
@@ -77,16 +86,24 @@ public class ModbusSlaveService extends IntentService {
         client = new ModbusClient(serverAddress, serverPort);
         client.addSendDataChangedListener(() -> Log.i(TAG, "Send Data fired"));
 
-        try {
-            client.Connect();
-            listening = true;
-            Intent successfullyConnect = new Intent(ACTION_CONNECTED);
-            successfullyConnect.putExtra(EXTRA_SERVER_ADDRESS, serverAddress);
-            successfullyConnect.putExtra(EXTRA_SERVER_PORT, serverPort);
-            LocalBroadcastManager.getInstance(this).sendBroadcast(successfullyConnect);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        handlerThread = new HandlerThread(this.getClass().toString());
+        handlerThread.start();
+        handler = new Handler(handlerThread.getLooper());
+
+        handler.post(() -> {
+            try {
+                client.Connect();
+                Log.i(TAG, "Modbus slave is listening.");
+                listening = true;
+
+                Intent successfullyConnect = new Intent(ACTION_CONNECTED);
+                successfullyConnect.putExtra(EXTRA_SERVER_ADDRESS, serverAddress);
+                successfullyConnect.putExtra(EXTRA_SERVER_PORT, serverPort);
+                LocalBroadcastManager.getInstance(this).sendBroadcast(successfullyConnect);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        });
     }
 
     @Override
@@ -101,12 +118,13 @@ public class ModbusSlaveService extends IntentService {
     public void onDestroy() {
         super.onDestroy();
         if (listening) {
+            handlerThread.quitSafely();
+            LocalBroadcastManager.getInstance(this).unregisterReceiver(broadcastReceiver);
             try {
                 client.Disconnect();
             } catch (IOException e) {
                 e.printStackTrace();
             }
-            LocalBroadcastManager.getInstance(this).unregisterReceiver(broadcastReceiver);
             listening = false;
         }
         if (sensorManagerService != null) {
@@ -114,12 +132,21 @@ public class ModbusSlaveService extends IntentService {
         }
     }
 
+    @Nullable
     @Override
-    protected void onHandleIntent(@Nullable Intent intent) {
+    public IBinder onBind(Intent intent) {
+        return null;
+    }
+
+    @Override
+    public int onStartCommand(@Nullable Intent intent, int flags, int startId) {
         Log.i(TAG, "Starting service from intent");
-        if (intent != null && Objects.equals(intent.getAction(), ACTION_CONNECT)) {
+        if (intent != null && Objects.equals(intent.getAction(), ACTION_CONNECT) && !listening) {
             this.startConnection(intent.getStringExtra(EXTRA_SERVER_ADDRESS),
                     intent.getIntExtra(EXTRA_SERVER_PORT, 502));
         }
+        return super.onStartCommand(intent, flags, startId);
     }
+
+
 }
