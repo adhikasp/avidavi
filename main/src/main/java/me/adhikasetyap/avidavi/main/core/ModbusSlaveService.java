@@ -15,21 +15,22 @@ import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
 import java.io.IOException;
+import java.net.SocketTimeoutException;
 import java.util.Objects;
 
 import de.re.easymodbus.exceptions.ModbusException;
 import de.re.easymodbus.modbusclient.ModbusClient;
 import me.adhikasetyap.avidavi.main.core.utilities.Utilities;
 
+import static me.adhikasetyap.avidavi.main.core.utilities.Utilities.ACTION_CONNECTED;
+import static me.adhikasetyap.avidavi.main.core.utilities.Utilities.ACTION_SENSOR_BROADCAST;
+import static me.adhikasetyap.avidavi.main.core.utilities.Utilities.CATEGORY_MODBUS;
 import static me.adhikasetyap.avidavi.main.core.utilities.Utilities.EXTRA_SENSOR_TYPE;
 import static me.adhikasetyap.avidavi.main.core.utilities.Utilities.EXTRA_SENSOR_VALUE;
 
 public class ModbusSlaveService extends Service {
 
     private static final String TAG = ModbusSlaveService.class.getName();
-
-    public static final String ACTION_CONNECT = TAG + ".CONNECT";
-    public static final String ACTION_CONNECTED = TAG + ".CONNECTED";
 
     public static final String EXTRA_SERVER_ADDRESS = TAG + ".SERVER_ADDRESS";
     public static final String EXTRA_SERVER_PORT = TAG + ".SERVER_PORT";
@@ -44,6 +45,7 @@ public class ModbusSlaveService extends Service {
         @Override
         public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
             sensorManagerService = ((SensorManagerService.LocalBinder) iBinder).getService();
+            Log.i(TAG, sensorManagerService.toString());
         }
 
         @Override
@@ -65,6 +67,8 @@ public class ModbusSlaveService extends Service {
                         Log.i(TAG, "Sensor : " + sensorType);
                         Log.i(TAG, "Value  : " + sensorValue);
                         client.WriteSingleRegister(1, sensorValue);
+                    } catch (SocketTimeoutException e) {
+                        restartConnection(true, 1, sensorValue);
                     } catch (ModbusException | IOException e) {
                         e.printStackTrace();
                     }
@@ -81,7 +85,7 @@ public class ModbusSlaveService extends Service {
     public void startConnection(String serverAddress, int serverPort) {
         LocalBroadcastManager.getInstance(this).registerReceiver(
                 broadcastReceiver,
-                new IntentFilter(Utilities.ACTION_SENSOR_BROADCAST));
+                new IntentFilter(ACTION_SENSOR_BROADCAST));
 
         client = new ModbusClient(serverAddress, serverPort);
         client.addSendDataChangedListener(() -> Log.i(TAG, "Send Data fired"));
@@ -93,10 +97,12 @@ public class ModbusSlaveService extends Service {
         handler.post(() -> {
             try {
                 client.Connect();
+                client.setConnectionTimeout(5000);
                 Log.i(TAG, "Modbus slave is listening.");
                 listening = true;
 
                 Intent successfullyConnect = new Intent(ACTION_CONNECTED);
+                successfullyConnect.addCategory(CATEGORY_MODBUS);
                 successfullyConnect.putExtra(EXTRA_SERVER_ADDRESS, serverAddress);
                 successfullyConnect.putExtra(EXTRA_SERVER_PORT, serverPort);
                 LocalBroadcastManager.getInstance(this).sendBroadcast(successfullyConnect);
@@ -106,9 +112,25 @@ public class ModbusSlaveService extends Service {
         });
     }
 
+    public void restartConnection(Boolean hasResendData, int resendAddress, int resendData) {
+        try {
+            if (listening) {
+                client.Disconnect();
+            }
+            client.Connect();
+            client.setConnectionTimeout(5000);
+            if (hasResendData) {
+                client.WriteSingleRegister(resendAddress, resendData);
+            }
+        } catch (IOException | ModbusException e) {
+            e.printStackTrace();
+        }
+    }
+
     @Override
     public void onCreate() {
         super.onCreate();
+        Log.i(TAG, "onCreate");
         bindService(
                 new Intent(ModbusSlaveService.this, SensorManagerService.class),
                 sensorManagerConnection, BIND_AUTO_CREATE);
@@ -141,7 +163,7 @@ public class ModbusSlaveService extends Service {
     @Override
     public int onStartCommand(@Nullable Intent intent, int flags, int startId) {
         Log.i(TAG, "Starting service from intent");
-        if (intent != null && Objects.equals(intent.getAction(), ACTION_CONNECT) && !listening) {
+        if (intent != null && Objects.equals(intent.getAction(), Utilities.ACTION_CONNECT) && !listening) {
             this.startConnection(intent.getStringExtra(EXTRA_SERVER_ADDRESS),
                     intent.getIntExtra(EXTRA_SERVER_PORT, 502));
         }
