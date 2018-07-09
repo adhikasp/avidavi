@@ -37,6 +37,11 @@ public class SensorManagerService extends Service {
         sensorManager.unregisterListener(proximitySensorListener);
     }
 
+    @Override
+    public int onStartCommand(Intent intent, int flags, int startId) {
+        return super.onStartCommand(intent, flags, startId);
+    }
+
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {
