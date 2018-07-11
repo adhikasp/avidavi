@@ -19,6 +19,7 @@ public class Utilities {
     public static final String ACTION_CONNECT = TAG + ".CONNECT";
     public static final String ACTION_CONNECTING = TAG + ".CONNECT";
     public static final String ACTION_CONNECTED = TAG + ".CONNECTED";
+    public static final String ACTION_DISCONNECT = TAG + ".DISCONNECT";
     public static final String ACTION_SENSOR_BROADCAST = TAG + ".SENSOR_BROADCAST";
 
     public static final String EXTRA_SENSOR_VALUE = TAG + ".SENSOR_VALUE";
@@ -26,6 +27,9 @@ public class Utilities {
     public static final String EXTRA_SENSOR_STATUS = TAG + ".SENSOR_STATUS";
 
     public static final SparseArray<String> SENSOR_NAME;
+
+    public static final String PREFERENCE_SERVER_ADDRESS = "pref_key_server_address";
+    public static final String PREFERENCE_SERVER_PORT = "pref_key_server_port";
 
     static {
         SENSOR_NAME = new SparseArray<>();

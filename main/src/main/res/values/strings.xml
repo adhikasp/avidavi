@@ -1,1 +1,4 @@
-<resources></resources>
+<resources>
+    <string name="action_settings">Setting</string>
+    <string name="action_connect">Connect</string>
+</resources>

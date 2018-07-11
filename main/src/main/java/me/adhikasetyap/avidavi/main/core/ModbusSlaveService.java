@@ -23,6 +23,7 @@ import de.re.easymodbus.modbusclient.ModbusClient;
 import me.adhikasetyap.avidavi.main.core.utilities.Utilities;
 
 import static me.adhikasetyap.avidavi.main.core.utilities.Utilities.ACTION_CONNECTED;
+import static me.adhikasetyap.avidavi.main.core.utilities.Utilities.ACTION_DISCONNECT;
 import static me.adhikasetyap.avidavi.main.core.utilities.Utilities.ACTION_SENSOR_BROADCAST;
 import static me.adhikasetyap.avidavi.main.core.utilities.Utilities.CATEGORY_MODBUS;
 import static me.adhikasetyap.avidavi.main.core.utilities.Utilities.EXTRA_SENSOR_TYPE;
@@ -50,6 +51,7 @@ public class ModbusSlaveService extends Service {
 
         @Override
         public void onServiceDisconnected(ComponentName componentName) {
+            sensorManagerService = null;
         }
     };
     private BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
@@ -127,6 +129,21 @@ public class ModbusSlaveService extends Service {
         }
     }
 
+    public void stopConnection() {
+        try {
+            if (listening) {
+                client.Disconnect();
+            }
+            Intent disconnected = new Intent(ACTION_DISCONNECT);
+            disconnected.addCategory(CATEGORY_MODBUS);
+            LocalBroadcastManager.getInstance(this).sendBroadcast(disconnected);
+            listening = false;
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+    }
+
     @Override
     public void onCreate() {
         super.onCreate();
@@ -164,8 +181,10 @@ public class ModbusSlaveService extends Service {
     public int onStartCommand(@Nullable Intent intent, int flags, int startId) {
         Log.i(TAG, "Starting service from intent");
         if (intent != null && Objects.equals(intent.getAction(), Utilities.ACTION_CONNECT) && !listening) {
-            this.startConnection(intent.getStringExtra(EXTRA_SERVER_ADDRESS),
+            startConnection(intent.getStringExtra(EXTRA_SERVER_ADDRESS),
                     intent.getIntExtra(EXTRA_SERVER_PORT, 502));
+        } else if (intent != null && Objects.equals(intent.getAction(), ACTION_DISCONNECT) && listening) {
+            stopConnection();
         }
         return super.onStartCommand(intent, flags, startId);
     }

@@ -1,15 +1,20 @@
 package me.adhikasetyap.avidavi.main;
 
-import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.hardware.Sensor;
 import android.hardware.SensorManager;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.v4.content.LocalBroadcastManager;
+import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.Toolbar;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.ListView;
 import android.widget.SimpleAdapter;
@@ -28,17 +33,23 @@ import static me.adhikasetyap.avidavi.main.core.SensorManagerService.SUPPORTED_S
 import static me.adhikasetyap.avidavi.main.core.utilities.Utilities.ACTION_CONNECT;
 import static me.adhikasetyap.avidavi.main.core.utilities.Utilities.ACTION_CONNECTED;
 import static me.adhikasetyap.avidavi.main.core.utilities.Utilities.ACTION_CONNECTING;
+import static me.adhikasetyap.avidavi.main.core.utilities.Utilities.ACTION_DISCONNECT;
 import static me.adhikasetyap.avidavi.main.core.utilities.Utilities.CATEGORY_MODBUS;
 import static me.adhikasetyap.avidavi.main.core.utilities.Utilities.CATEGORY_SENSOR;
 import static me.adhikasetyap.avidavi.main.core.utilities.Utilities.EXTRA_SENSOR_STATUS;
 import static me.adhikasetyap.avidavi.main.core.utilities.Utilities.EXTRA_SENSOR_TYPE;
+import static me.adhikasetyap.avidavi.main.core.utilities.Utilities.PREFERENCE_SERVER_ADDRESS;
+import static me.adhikasetyap.avidavi.main.core.utilities.Utilities.PREFERENCE_SERVER_PORT;
 
-public class HomePage extends Activity {
+public class HomePage extends AppCompatActivity {
 
     private static final String TAG = HomePage.class.getName();
 
+    private SharedPreferences sharedPreferences;
     private SimpleAdapter sensorListAdapter;
     private List<HashMap<String, String>> sensorList;
+
+    private boolean listening = false;
 
     private BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
         @Override
@@ -46,6 +57,7 @@ public class HomePage extends Activity {
             Log.i(TAG, "Receive broadcast intent " + intent.toString());
             if (Objects.equals(intent.getAction(), ACTION_CONNECTED) &&
                     intent.getCategories().contains(CATEGORY_MODBUS)) {
+                listening = true;
                 TextView connectionStatus = findViewById(R.id.connection_status);
                 connectionStatus.setText("Connected");
                 TextView serverAddress = findViewById(R.id.server_address);
@@ -66,6 +78,15 @@ public class HomePage extends Activity {
                         break;
                     }
                 }
+            } else if (Objects.equals(intent.getAction(), ACTION_DISCONNECT) &&
+                    intent.getCategories().contains(CATEGORY_MODBUS)) {
+                listening = false;
+                TextView connectionStatus = findViewById(R.id.connection_status);
+                connectionStatus.setText("Disconnected");
+                TextView serverAddress = findViewById(R.id.server_address);
+                serverAddress.setText("IP Address: -");
+                View connectedIcon = findViewById(R.id.connected_icon);
+                connectedIcon.setBackground(getDrawable(R.drawable.status_disconnected));
             }
         }
     };
@@ -75,8 +96,15 @@ public class HomePage extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_home_page);
 
+        Toolbar myToolbar = findViewById(R.id.app_toolbar);
+        setSupportActionBar(myToolbar);
+
         SensorManager sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
         printSensorList(sensorManager);
+
+        //
+
+        sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
 
         // Init sensor list
         ListView sensorListView = findViewById(R.id.sensor_list);
@@ -98,18 +126,13 @@ public class HomePage extends Activity {
                 this, sensorList, R.layout.sensor_list_item_view, fromColumns, toColumns);
         sensorListView.setAdapter(sensorListAdapter);
 
-        // Start a ModbusSlaveService
-        // https://stackoverflow.com/questions/2334955/start-a-service-from-activity
-        Intent startModbusSlaveIntent = new Intent(this, ModbusSlaveService.class);
-        startModbusSlaveIntent.setAction(ACTION_CONNECT);
-        startModbusSlaveIntent.putExtra(EXTRA_SERVER_ADDRESS, "192.168.100.6");
-        startModbusSlaveIntent.putExtra(EXTRA_SERVER_PORT, 5020);
-        startService(startModbusSlaveIntent);
+        connectToServer();
 
         IntentFilter filter = new IntentFilter();
         filter.addAction(ACTION_CONNECTED);
         filter.addAction(ACTION_CONNECT);
         filter.addAction(ACTION_CONNECTING);
+        filter.addAction(ACTION_DISCONNECT);
         filter.addCategory(CATEGORY_MODBUS);
         filter.addCategory(CATEGORY_SENSOR);
         LocalBroadcastManager.getInstance(this).registerReceiver(
@@ -117,9 +140,66 @@ public class HomePage extends Activity {
     }
 
     @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        // Inflate the menu; this adds items to the action bar if it is present.
+        getMenuInflater().inflate(R.menu.default_menu, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem menuItem) {
+        int selection = menuItem.getItemId();
+        if (selection == R.id.action_settings) {
+            startActivity(new Intent(this, SettingActivity.class));
+            return true;
+        } else if (selection == R.id.action_connect) {
+            connectOrDisconnect();
+            return true;
+        } else {
+            return super.onOptionsItemSelected(menuItem);
+        }
+    }
+
+
+    @Override
     public void onDestroy() {
         super.onDestroy();
         LocalBroadcastManager.getInstance(this).unregisterReceiver(broadcastReceiver);
+    }
+
+    private void connectOrDisconnect() {
+        if (listening) {
+            disconnectFromServer();
+        } else {
+            connectToServer();
+        }
+    }
+
+    private void connectToServer() {
+        // Start a ModbusSlaveService
+        // https://stackoverflow.com/questions/2334955/start-a-service-from-activity
+        // TODO reconnect if first attempt failed.
+        int port = Integer.parseInt(sharedPreferences.getString(PREFERENCE_SERVER_PORT, "5020"));
+
+        Intent startModbusSlaveIntent = new Intent(this, ModbusSlaveService.class);
+        startModbusSlaveIntent.setAction(ACTION_CONNECT);
+        startModbusSlaveIntent.putExtra(
+                EXTRA_SERVER_ADDRESS,
+                sharedPreferences.getString(PREFERENCE_SERVER_ADDRESS, "192.168.100.6"));
+        startModbusSlaveIntent.putExtra(
+                EXTRA_SERVER_PORT,
+                port);
+        Log.i(TAG, "connectToServer");
+        startService(startModbusSlaveIntent);
+    }
+
+    private void disconnectFromServer() {
+        Intent stopModbusSlaveIntent = new Intent(this, ModbusSlaveService.class);
+        stopModbusSlaveIntent.setAction(ACTION_DISCONNECT);
+
+        Log.i(TAG, "disconnectFromServer");
+        startService(stopModbusSlaveIntent);
+        // TODO show progress
     }
 
     public void printSensorList(SensorManager sensorManager) {

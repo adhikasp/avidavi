@@ -3,7 +3,9 @@
     package="me.adhikasetyap.avidavi.main">
 
     <application android:name=".core.AvidaviApplication">
-        <activity android:name=".HomePage">
+        <activity
+            android:name=".HomePage"
+            android:label="@string/app_name">
             <intent-filter android:order="1">
                 <action android:name="android.intent.action.VIEW" />
 
@@ -21,9 +23,11 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity android:name=".SettingActivity" />
         <service android:name=".core.ModbusSlaveService" />
         <service android:name=".core.SensorManagerService" />
     </application>
 
     <uses-permission-sdk-23 android:name="android.permission.INTERNET" />
+    <uses-permission-sdk-23 android:name="android.permission.ACCESS_FINE_LOCATION" />
 </manifest>
