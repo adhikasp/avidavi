@@ -7,25 +7,31 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
+import android.content.SharedPreferences;
+import android.hardware.Sensor;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.IBinder;
+import android.preference.PreferenceManager;
 import android.support.annotation.Nullable;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
 import java.io.IOException;
 import java.net.SocketTimeoutException;
+import java.util.Arrays;
 import java.util.Objects;
 
 import de.re.easymodbus.exceptions.ModbusException;
 import de.re.easymodbus.modbusclient.ModbusClient;
+import me.adhikasetyap.avidavi.main.R;
 import me.adhikasetyap.avidavi.main.core.utilities.Utilities;
 
 import static me.adhikasetyap.avidavi.main.core.utilities.Utilities.ACTION_CONNECTED;
 import static me.adhikasetyap.avidavi.main.core.utilities.Utilities.ACTION_DISCONNECT;
 import static me.adhikasetyap.avidavi.main.core.utilities.Utilities.ACTION_SENSOR_BROADCAST;
 import static me.adhikasetyap.avidavi.main.core.utilities.Utilities.CATEGORY_MODBUS;
+import static me.adhikasetyap.avidavi.main.core.utilities.Utilities.EXTRA_SENSOR_NAME;
 import static me.adhikasetyap.avidavi.main.core.utilities.Utilities.EXTRA_SENSOR_TYPE;
 import static me.adhikasetyap.avidavi.main.core.utilities.Utilities.EXTRA_SENSOR_VALUE;
 
@@ -35,6 +41,8 @@ public class ModbusSlaveService extends Service {
 
     public static final String EXTRA_SERVER_ADDRESS = TAG + ".SERVER_ADDRESS";
     public static final String EXTRA_SERVER_PORT = TAG + ".SERVER_PORT";
+
+    SharedPreferences sharedPreferences;
 
     private ModbusClient client;
     private SensorManagerService sensorManagerService;
@@ -58,23 +66,25 @@ public class ModbusSlaveService extends Service {
         @Override
         public void onReceive(Context context, Intent intent) {
             if (listening) {
-                String sensorType = intent.getStringExtra(EXTRA_SENSOR_TYPE);
-                int sensorValue = (int) intent.getFloatExtra(EXTRA_SENSOR_VALUE, 0.0f);
+                String sensorName = intent.getStringExtra(EXTRA_SENSOR_NAME);
+                int[] sensorValues = intent.getIntArrayExtra(EXTRA_SENSOR_VALUE);
+                int sentAddress = getSensorSentAddressPreference(intent.getIntExtra(EXTRA_SENSOR_TYPE, 0));
                 handler.post(() -> {
                     try {
                         // TODO change startingAddress based on sensor type
                         // TODO make address user configurable
                         // TODO refactor this to outside function
                         Log.i(TAG, "Sending data to " + client.getipAddress());
-                        Log.i(TAG, "Sensor : " + sensorType);
-                        Log.i(TAG, "Value  : " + sensorValue);
-                        client.WriteSingleRegister(1, sensorValue);
+                        Log.i(TAG, "Sensor : " + sensorName);
+                        Log.i(TAG, "Value  : " + Arrays.toString(sensorValues));
+                        for (int i = 0; i < sensorValues.length; i++) {
+                            client.WriteSingleRegister(sentAddress + i, sensorValues[i]);
+                        }
                     } catch (SocketTimeoutException e) {
-                        restartConnection(true, 1, sensorValue);
+                        restartConnection(false, 1, 1);
                     } catch (ModbusException | IOException e) {
                         e.printStackTrace();
                     }
-
                 });
             }
         }
@@ -92,7 +102,7 @@ public class ModbusSlaveService extends Service {
         client = new ModbusClient(serverAddress, serverPort);
         client.addSendDataChangedListener(() -> Log.i(TAG, "Send Data fired"));
 
-        handlerThread = new HandlerThread(this.getClass().toString());
+        handlerThread = new HandlerThread(TAG);
         handlerThread.start();
         handler = new Handler(handlerThread.getLooper());
 
@@ -151,6 +161,7 @@ public class ModbusSlaveService extends Service {
         bindService(
                 new Intent(ModbusSlaveService.this, SensorManagerService.class),
                 sensorManagerConnection, BIND_AUTO_CREATE);
+        sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
     }
 
     @Override
@@ -189,5 +200,18 @@ public class ModbusSlaveService extends Service {
         return super.onStartCommand(intent, flags, startId);
     }
 
-
+    private int getSensorSentAddressPreference(int sensorType) {
+        switch (sensorType) {
+            case Sensor.TYPE_GYROSCOPE:
+                return Integer.valueOf(sharedPreferences.getString(
+                        "pref_key_gyro_address",
+                        R.string.pref_default_gyroscope_address));
+            case Sensor.TYPE_PROXIMITY:
+                return Integer.valueOf(sharedPreferences.getString(
+                        "pref_key_proximity_address",
+                        R.string.pref_default_proximity_address));
+            default:
+                return 0;
+        }
+    }
 }

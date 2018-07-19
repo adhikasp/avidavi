@@ -24,6 +24,7 @@ public class Utilities {
 
     public static final String EXTRA_SENSOR_VALUE = TAG + ".SENSOR_VALUE";
     public static final String EXTRA_SENSOR_TYPE = TAG + ".SENSOR_TYPE";
+    public static final String EXTRA_SENSOR_NAME = TAG + ".SENSOR_NAME";
     public static final String EXTRA_SENSOR_STATUS = TAG + ".SENSOR_STATUS";
 
     public static final SparseArray<String> SENSOR_NAME;
@@ -34,6 +35,7 @@ public class Utilities {
     static {
         SENSOR_NAME = new SparseArray<>();
         SENSOR_NAME.put(Sensor.TYPE_PROXIMITY, "Proximity Sensor");
+        SENSOR_NAME.put(Sensor.TYPE_GYROSCOPE, "Gyroscope Sensor");
     }
 
     public static <C> List<C> sparseArrayAsList(SparseArray<C> sparseArray) {
@@ -45,12 +47,17 @@ public class Utilities {
         return arrayList;
     }
 
-    public static void broadcastSensorData(int sensorType, Float value) {
+    public static void broadcastSensorData(int sensorType, int[] values) {
         Intent intent = new Intent(ACTION_SENSOR_BROADCAST);
-        intent.putExtra(EXTRA_SENSOR_TYPE, SENSOR_NAME.get(sensorType, "sensor not identified"));
-        intent.putExtra(EXTRA_SENSOR_VALUE, value);
+        intent.putExtra(EXTRA_SENSOR_NAME, SENSOR_NAME.get(sensorType, "sensor not identified"));
+        intent.putExtra(EXTRA_SENSOR_TYPE, sensorType);
+        intent.putExtra(EXTRA_SENSOR_VALUE, values);
         LocalBroadcastManager
                 .getInstance(AvidaviApplication.getContext())
                 .sendBroadcast(intent);
+    }
+
+    public static float radianToDegree(float rad) {
+        return (float) ((Math.toDegrees(rad) + 360) % 360);
     }
 }

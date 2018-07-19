@@ -13,6 +13,7 @@ import android.util.Log;
 
 import java.util.List;
 
+import me.adhikasetyap.avidavi.main.core.listener.GyroscopeSensorListener;
 import me.adhikasetyap.avidavi.main.core.listener.ProximitySensorListener;
 
 import static me.adhikasetyap.avidavi.main.core.utilities.Utilities.ACTION_CONNECTED;
@@ -24,13 +25,20 @@ import static me.adhikasetyap.avidavi.main.core.utilities.Utilities.sparseArrayA
 
 public class SensorManagerService extends Service {
 
+    private static final String TAG = SensorManagerService.class.getName();
+
     public static final List<String> SUPPORTED_SENSOR;
 
     private final LocalBinder binder = new LocalBinder();
+
     private SensorManager sensorManager;
+    private Sensor accelerometerSensor;
+    private Sensor gyroscopeSensor;
+    private Sensor magnetometerSensor;
     private Sensor proximitySensor;
+
     private SensorEventListener proximitySensorListener;
-    private static final String TAG = SensorManagerService.class.getName();
+    private SensorEventListener gyroscopeSensorListener;
 
     static {
         SUPPORTED_SENSOR = sparseArrayAsList(SENSOR_NAME);
@@ -46,6 +54,7 @@ public class SensorManagerService extends Service {
     @Override
     public boolean onUnbind(Intent intent) {
         // TODO unbind all sensor listener
+        sensorManager.unregisterListener(gyroscopeSensorListener);
         sensorManager.unregisterListener(proximitySensorListener);
         return false;
     }
@@ -60,14 +69,37 @@ public class SensorManagerService extends Service {
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {
+        accelerometerSensor = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+        gyroscopeSensor = sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE);
+        magnetometerSensor = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
         proximitySensor = sensorManager.getDefaultSensor(Sensor.TYPE_PROXIMITY);
+
         proximitySensorListener = new ProximitySensorListener();
+        gyroscopeSensorListener = new GyroscopeSensorListener();
 
         Boolean proximityActive = sensorManager.registerListener(
                 proximitySensorListener,
                 proximitySensor,
                 SensorManager.SENSOR_DELAY_NORMAL);
         onSensorStartingSuccess(proximityActive, Sensor.TYPE_PROXIMITY);
+
+        // Gyro need fusion of 3 different sensors
+        boolean a = sensorManager.registerListener(
+                gyroscopeSensorListener,
+                accelerometerSensor,
+                SensorManager.SENSOR_DELAY_FASTEST
+        );
+        boolean b = sensorManager.registerListener(
+                gyroscopeSensorListener,
+                gyroscopeSensor,
+                SensorManager.SENSOR_DELAY_FASTEST
+        );
+        boolean c = sensorManager.registerListener(
+                gyroscopeSensorListener,
+                magnetometerSensor,
+                SensorManager.SENSOR_DELAY_FASTEST
+        );
+        onSensorStartingSuccess(a && b && c, Sensor.TYPE_GYROSCOPE);
 
         return binder;
     }
@@ -81,7 +113,7 @@ public class SensorManagerService extends Service {
     private void onSensorStartingSuccess(Boolean success, int sensorType) {
         String sensorName = SENSOR_NAME.get(sensorType);
         if (!success) {
-            Log.i(TAG, "Failing to start sensor " + sensorName);
+            Log.e(TAG, "Failing to start sensor " + sensorName);
             return;
         }
 

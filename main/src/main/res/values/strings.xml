@@ -1,4 +1,8 @@
 <resources>
+    <!-- Setting default value -->
+    <string name="pref_default_gyroscope_address">1</string>
+    <string name="pref_default_proximity_address">4</string>
+
     <string name="action_settings">Setting</string>
     <string name="action_connect">Connect</string>
 </resources>
