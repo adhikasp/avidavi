@@ -10,6 +10,11 @@ import com.kircherelectronics.fsensor.util.rotation.RotationUtil;
 
 import me.adhikasetyap.avidavi.main.core.utilities.Utilities;
 
+/**
+ * This implementation of Fused Gyroscope sensor with Kalman Filter
+ * is taken from GyroscopeExplorer here https://github.com/KalebKE/GyroscopeExplorer
+ * with some modification.
+ */
 public class GyroscopeSensorListener implements SensorEventListener {
 
     private String TAG = GyroscopeSensorListener.class.getName();

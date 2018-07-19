@@ -202,6 +202,11 @@ public class ModbusSlaveService extends Service {
 
     private int getSensorSentAddressPreference(int sensorType) {
         switch (sensorType) {
+            case Sensor.TYPE_ACCELEROMETER:
+                return Integer.valueOf(sharedPreferences.getString(
+                        "pref_key_accelerometer_address",
+                        getString(R.string.pref_default_accelerometer_address))
+                );
             case Sensor.TYPE_GYROSCOPE:
                 return Integer.valueOf(sharedPreferences.getString(
                         "pref_key_gyro_address",

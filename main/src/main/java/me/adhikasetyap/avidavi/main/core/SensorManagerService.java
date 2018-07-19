@@ -13,6 +13,7 @@ import android.util.Log;
 
 import java.util.List;
 
+import me.adhikasetyap.avidavi.main.core.listener.AccelerationSensorListener;
 import me.adhikasetyap.avidavi.main.core.listener.GyroscopeSensorListener;
 import me.adhikasetyap.avidavi.main.core.listener.ProximitySensorListener;
 
@@ -37,12 +38,14 @@ public class SensorManagerService extends Service {
     private Sensor magnetometerSensor;
     private Sensor proximitySensor;
 
+    private SensorEventListener accelerometerSensorListener;
     private SensorEventListener proximitySensorListener;
     private SensorEventListener gyroscopeSensorListener;
 
     static {
         SUPPORTED_SENSOR = sparseArrayAsList(SENSOR_NAME);
     }
+
 
     @Override
     public void onCreate() {
@@ -74,6 +77,7 @@ public class SensorManagerService extends Service {
         magnetometerSensor = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
         proximitySensor = sensorManager.getDefaultSensor(Sensor.TYPE_PROXIMITY);
 
+        accelerometerSensorListener = new AccelerationSensorListener();
         proximitySensorListener = new ProximitySensorListener();
         gyroscopeSensorListener = new GyroscopeSensorListener();
 
@@ -87,19 +91,38 @@ public class SensorManagerService extends Service {
         boolean a = sensorManager.registerListener(
                 gyroscopeSensorListener,
                 accelerometerSensor,
-                SensorManager.SENSOR_DELAY_FASTEST
+                SensorManager.SENSOR_DELAY_NORMAL
         );
         boolean b = sensorManager.registerListener(
                 gyroscopeSensorListener,
                 gyroscopeSensor,
-                SensorManager.SENSOR_DELAY_FASTEST
+                SensorManager.SENSOR_DELAY_NORMAL
         );
         boolean c = sensorManager.registerListener(
                 gyroscopeSensorListener,
                 magnetometerSensor,
-                SensorManager.SENSOR_DELAY_FASTEST
+                SensorManager.SENSOR_DELAY_NORMAL
         );
         onSensorStartingSuccess(a && b && c, Sensor.TYPE_GYROSCOPE);
+
+
+        // Accelerometer
+        boolean d = sensorManager.registerListener(
+                accelerometerSensorListener,
+                accelerometerSensor,
+                SensorManager.SENSOR_DELAY_NORMAL
+        );
+        boolean f = sensorManager.registerListener(
+                accelerometerSensorListener,
+                gyroscopeSensor,
+                SensorManager.SENSOR_DELAY_NORMAL
+        );
+        boolean e = sensorManager.registerListener(
+                accelerometerSensorListener,
+                magnetometerSensor,
+                SensorManager.SENSOR_DELAY_NORMAL
+        );
+        onSensorStartingSuccess(d && e && f, Sensor.TYPE_ACCELEROMETER);
 
         return binder;
     }

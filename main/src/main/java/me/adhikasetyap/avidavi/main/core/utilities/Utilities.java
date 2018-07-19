@@ -34,6 +34,7 @@ public class Utilities {
 
     static {
         SENSOR_NAME = new SparseArray<>();
+        SENSOR_NAME.put(Sensor.TYPE_ACCELEROMETER, "Accelerometer Sensor");
         SENSOR_NAME.put(Sensor.TYPE_PROXIMITY, "Proximity Sensor");
         SENSOR_NAME.put(Sensor.TYPE_GYROSCOPE, "Gyroscope Sensor");
     }
