@@ -205,11 +205,13 @@ public class ModbusSlaveService extends Service {
             case Sensor.TYPE_GYROSCOPE:
                 return Integer.valueOf(sharedPreferences.getString(
                         "pref_key_gyro_address",
-                        R.string.pref_default_gyroscope_address));
+                        getString(R.string.pref_default_gyroscope_address))
+                );
             case Sensor.TYPE_PROXIMITY:
                 return Integer.valueOf(sharedPreferences.getString(
                         "pref_key_proximity_address",
-                        R.string.pref_default_proximity_address));
+                        getString(R.string.pref_default_proximity_address))
+                );
             default:
                 return 0;
         }

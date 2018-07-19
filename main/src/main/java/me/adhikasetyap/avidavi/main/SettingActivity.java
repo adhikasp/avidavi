@@ -15,7 +15,7 @@ public class SettingActivity extends PreferenceActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        addPreferencesFromResource(R.layout.setting_page);
+        addPreferencesFromResource(R.layout.setting_activity);
     }
 
     @Override

@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <PreferenceCategory android:title="Connection">
+
+        <EditTextPreference
+            android:defaultValue="192.168.100.1"
+            android:key="pref_key_server_address"
+            android:summary="IP address of the modbus master"
+            android:title="Server IP Address" />
+
+        <EditTextPreference
+            android:defaultValue="5020"
+            android:inputType="number"
+            android:key="pref_key_server_port"
+            android:summary="Port of modbus master"
+            android:title="Server Port" />
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="Sensor">
+
+        <EditTextPreference
+            android:defaultValue="@string/pref_default_gyroscope_address"
+            android:inputType="number"
+            android:key="pref_key_gyroscope_address"
+            android:summary="Register memory starting address where the sensor data would be sent to"
+            android:title="Gyroscope sent address" />
+
+        <EditTextPreference
+            android:defaultValue="@string/pref_default_proximity_address"
+            android:inputType="number"
+            android:key="pref_key_proximity_address"
+            android:summary="Register memory starting address where the sensor data would be sent to"
+            android:title="Proximity sent address" />
+    </PreferenceCategory>
+
+</PreferenceScreen>
