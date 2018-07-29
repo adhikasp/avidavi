@@ -6,7 +6,7 @@
     android:layout_height="match_parent"
     android:clickable="false"
     android:focusableInTouchMode="false"
-    tools:context=".HomePage">
+    tools:context=".HomePageActivity">
 
     <android.support.v7.widget.Toolbar
         android:id="@+id/app_toolbar"

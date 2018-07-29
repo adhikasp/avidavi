@@ -21,11 +21,18 @@ public class Utilities {
     public static final String ACTION_CONNECTED = TAG + ".CONNECTED";
     public static final String ACTION_DISCONNECT = TAG + ".DISCONNECT";
     public static final String ACTION_SENSOR_BROADCAST = TAG + ".SENSOR_BROADCAST";
+    public static final String ACTION_MEMORY_READ_REQUEST = TAG + ".MEMORY_READ_REQUEST";
+    public static final String ACTION_MEMORY_READ_RESPONSE = TAG + ".MEMORY_READ_RESPONSE";
 
     public static final String EXTRA_SENSOR_VALUE = TAG + ".SENSOR_VALUE";
     public static final String EXTRA_SENSOR_TYPE = TAG + ".SENSOR_TYPE";
     public static final String EXTRA_SENSOR_NAME = TAG + ".SENSOR_NAME";
     public static final String EXTRA_SENSOR_STATUS = TAG + ".SENSOR_STATUS";
+    public static final String EXTRA_MEMORY_ADDRESS_TYPE = TAG + ".MEMORY_ADDRESS_TYPE";
+    public static final String EXTRA_MEMORY_ADDRESS_START = TAG + ".MEMORY_ADDRESS_START";
+    public static final String EXTRA_MEMORY_ADDRESS_QUANTITY = TAG + ".MEMORY_ADDRESS_QUANTITY";
+    public static final String EXTRA_MEMORY_ADDRESS_NUM = TAG + ".MEMORY_ADDRESS_NUM";
+    public static final String EXTRA_MEMORY_ADDRESS_VALUE = TAG + ".MEMORY_ADDRESS_VALUE";
 
     public static final SparseArray<String> SENSOR_NAME;
 
@@ -60,5 +67,13 @@ public class Utilities {
 
     public static float radianToDegree(float rad) {
         return (float) ((Math.toDegrees(rad) + 360) % 360);
+    }
+
+    public static int[] range(int min, int len) {
+        int[] result = new int[len];
+        for (int i = 0; i < len; i++) {
+            result[i] = i + min;
+        }
+        return result;
     }
 }

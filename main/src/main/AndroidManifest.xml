@@ -4,7 +4,7 @@
 
     <application android:name=".core.AvidaviApplication">
         <activity
-            android:name=".HomePage"
+            android:name=".HomePageActivity"
             android:label="@string/app_name">
             <intent-filter android:order="1">
                 <action android:name="android.intent.action.VIEW" />
@@ -24,6 +24,7 @@
             </intent-filter>
         </activity>
         <activity android:name=".SettingActivity" />
+        <activity android:name=".ModbusMemoryActivity" />
         <service android:name=".core.ModbusSlaveService" />
         <service android:name=".core.SensorManagerService" />
     </application>

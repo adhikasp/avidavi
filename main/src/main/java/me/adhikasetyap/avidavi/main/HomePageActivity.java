@@ -41,9 +41,9 @@ import static me.adhikasetyap.avidavi.main.core.utilities.Utilities.EXTRA_SENSOR
 import static me.adhikasetyap.avidavi.main.core.utilities.Utilities.PREFERENCE_SERVER_ADDRESS;
 import static me.adhikasetyap.avidavi.main.core.utilities.Utilities.PREFERENCE_SERVER_PORT;
 
-public class HomePage extends AppCompatActivity {
+public class HomePageActivity extends AppCompatActivity {
 
-    private static final String TAG = HomePage.class.getName();
+    private static final String TAG = HomePageActivity.class.getName();
 
     private SharedPreferences sharedPreferences;
     private SimpleAdapter sensorListAdapter;
@@ -54,6 +54,7 @@ public class HomePage extends AppCompatActivity {
     private BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
+            // TODO separate the if-else as different receiver
             Log.i(TAG, "Receive broadcast intent " + intent.toString());
             if (Objects.equals(intent.getAction(), ACTION_CONNECTED) &&
                     intent.getCategories().contains(CATEGORY_MODBUS)) {
@@ -121,7 +122,6 @@ public class HomePage extends AppCompatActivity {
         // TODO add sensor icon
         String[] fromColumns = {EXTRA_SENSOR_TYPE, EXTRA_SENSOR_STATUS};
         int[] toColumns = {R.id.sensor_name, R.id.sensor_status};
-
         sensorListAdapter = new SimpleAdapter(
                 this, sensorList, R.layout.sensor_list_item_view, fromColumns, toColumns);
         sensorListView.setAdapter(sensorListAdapter);
@@ -154,6 +154,9 @@ public class HomePage extends AppCompatActivity {
             return true;
         } else if (selection == R.id.action_connect) {
             connectOrDisconnect();
+            return true;
+        } else if (selection == R.id.action_modbus_memory) {
+            startActivity(new Intent(this, ModbusMemoryActivity.class));
             return true;
         } else {
             return super.onOptionsItemSelected(menuItem);

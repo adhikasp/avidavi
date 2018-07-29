@@ -3,13 +3,10 @@ package me.adhikasetyap.avidavi.main.core.listener;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
-import android.util.Log;
 
 import com.kircherelectronics.fsensor.filter.averaging.MeanFilter;
 import com.kircherelectronics.fsensor.filter.gyroscope.fusion.kalman.OrientationFusedKalman;
 import com.kircherelectronics.fsensor.linearacceleration.LinearAccelerationFusion;
-
-import java.util.Arrays;
 
 import me.adhikasetyap.avidavi.main.core.utilities.Utilities;
 
@@ -48,7 +45,6 @@ public class AccelerationSensorListener implements SensorEventListener {
                     Sensor.TYPE_ACCELEROMETER,
                     convertAccelerationToDM(acceleration)
             );
-            Log.i(TAG, "Acceleration : " + Arrays.toString(acceleration));
         } else if (event.sensor.getType() == Sensor.TYPE_MAGNETIC_FIELD) {
             System.arraycopy(magnetic, 0, this.magnetic, 0, magnetic.length);
         } else if (event.sensor.getType() == Sensor.TYPE_GYROSCOPE) {

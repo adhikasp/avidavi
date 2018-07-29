@@ -6,4 +6,8 @@
 
     <string name="action_settings">Setting</string>
     <string name="action_connect">Connect</string>
+    <string name="action_modbus_memory">Modbus Memory</string>
+    <string name="starting_address">Starting Address</string>
+    <string name="last_address">Last Address</string>
+    <string name="address_quantity">Quantity</string>
 </resources>

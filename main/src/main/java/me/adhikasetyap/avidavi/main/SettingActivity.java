@@ -3,14 +3,9 @@ package me.adhikasetyap.avidavi.main;
 import android.os.Bundle;
 import android.preference.PreferenceActivity;
 import android.view.Menu;
-import android.widget.ListView;
-import android.widget.SimpleAdapter;
 
 // TODO change this to PreferenceFragment
 public class SettingActivity extends PreferenceActivity {
-
-    ListView settingListView;
-    SimpleAdapter settingListAdapter;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {

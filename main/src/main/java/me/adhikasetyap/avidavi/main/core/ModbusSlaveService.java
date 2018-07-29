@@ -29,11 +29,19 @@ import me.adhikasetyap.avidavi.main.core.utilities.Utilities;
 
 import static me.adhikasetyap.avidavi.main.core.utilities.Utilities.ACTION_CONNECTED;
 import static me.adhikasetyap.avidavi.main.core.utilities.Utilities.ACTION_DISCONNECT;
+import static me.adhikasetyap.avidavi.main.core.utilities.Utilities.ACTION_MEMORY_READ_REQUEST;
+import static me.adhikasetyap.avidavi.main.core.utilities.Utilities.ACTION_MEMORY_READ_RESPONSE;
 import static me.adhikasetyap.avidavi.main.core.utilities.Utilities.ACTION_SENSOR_BROADCAST;
 import static me.adhikasetyap.avidavi.main.core.utilities.Utilities.CATEGORY_MODBUS;
+import static me.adhikasetyap.avidavi.main.core.utilities.Utilities.EXTRA_MEMORY_ADDRESS_NUM;
+import static me.adhikasetyap.avidavi.main.core.utilities.Utilities.EXTRA_MEMORY_ADDRESS_QUANTITY;
+import static me.adhikasetyap.avidavi.main.core.utilities.Utilities.EXTRA_MEMORY_ADDRESS_START;
+import static me.adhikasetyap.avidavi.main.core.utilities.Utilities.EXTRA_MEMORY_ADDRESS_TYPE;
+import static me.adhikasetyap.avidavi.main.core.utilities.Utilities.EXTRA_MEMORY_ADDRESS_VALUE;
 import static me.adhikasetyap.avidavi.main.core.utilities.Utilities.EXTRA_SENSOR_NAME;
 import static me.adhikasetyap.avidavi.main.core.utilities.Utilities.EXTRA_SENSOR_TYPE;
 import static me.adhikasetyap.avidavi.main.core.utilities.Utilities.EXTRA_SENSOR_VALUE;
+import static me.adhikasetyap.avidavi.main.core.utilities.Utilities.range;
 
 public class ModbusSlaveService extends Service {
 
@@ -62,31 +70,87 @@ public class ModbusSlaveService extends Service {
             sensorManagerService = null;
         }
     };
-    private BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
+    private BroadcastReceiver onSensorDataReady = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            if (listening) {
-                String sensorName = intent.getStringExtra(EXTRA_SENSOR_NAME);
-                int[] sensorValues = intent.getIntArrayExtra(EXTRA_SENSOR_VALUE);
-                int sentAddress = getSensorSentAddressPreference(intent.getIntExtra(EXTRA_SENSOR_TYPE, 0));
-                handler.post(() -> {
-                    try {
-                        // TODO change startingAddress based on sensor type
-                        // TODO make address user configurable
-                        // TODO refactor this to outside function
-                        Log.i(TAG, "Sending data to " + client.getipAddress());
-                        Log.i(TAG, "Sensor : " + sensorName);
-                        Log.i(TAG, "Value  : " + Arrays.toString(sensorValues));
-                        for (int i = 0; i < sensorValues.length; i++) {
-                            client.WriteSingleRegister(sentAddress + i, sensorValues[i]);
-                        }
-                    } catch (SocketTimeoutException e) {
-                        restartConnection(false, 1, 1);
-                    } catch (ModbusException | IOException e) {
-                        e.printStackTrace();
-                    }
-                });
+            if (!listening) {
+                return;
             }
+            String sensorName = intent.getStringExtra(EXTRA_SENSOR_NAME);
+            int[] sensorValues = intent.getIntArrayExtra(EXTRA_SENSOR_VALUE);
+            int sentAddress = getSensorSentAddressPreference(intent.getIntExtra(EXTRA_SENSOR_TYPE, 0));
+            handler.post(() -> {
+                try {
+                    // TODO refactor this to outside function
+                    Log.d(TAG, "Sending data to " + client.getipAddress());
+                    Log.d(TAG, "Sensor : " + sensorName);
+                    Log.d(TAG, "Value  : " + Arrays.toString(sensorValues));
+                    for (int i = 0; i < sensorValues.length; i++) {
+                        client.WriteSingleRegister(sentAddress + i, sensorValues[i]);
+                    }
+                } catch (SocketTimeoutException e) {
+                    restartConnection(false, 1, 1);
+                } catch (ModbusException | IOException e) {
+                    e.printStackTrace();
+                }
+            });
+        }
+    };
+
+    private BroadcastReceiver onModbusMemoryReadRequest = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (!listening) {
+                return;
+            }
+
+            String memoryType = intent.getStringExtra(EXTRA_MEMORY_ADDRESS_TYPE);
+            int startAddress = intent.getIntExtra(EXTRA_MEMORY_ADDRESS_START, 1);
+            int addressQuantity = intent.getIntExtra(EXTRA_MEMORY_ADDRESS_QUANTITY, 1);
+            int len = Math.abs(addressQuantity);
+
+            handler.post(() -> {
+                try {
+                    int[] result = new int[len];
+                    switch (memoryType) {
+                        case "Coils": {
+                            boolean[] tmpResult = client.ReadCoils(startAddress, len);
+                            for (int i = 0; i < len; i++) {
+                                result[i] = tmpResult[i] ? 1 : 0;
+                            }
+                            break;
+                        }
+                        case "Discrete inputs": {
+                            boolean[] tmpResult = client.ReadDiscreteInputs(startAddress, len);
+                            for (int i = 0; i < len; i++) {
+                                result[i] = tmpResult[i] ? 1 : 0;
+                            }
+                            break;
+                        }
+                        case "Input registers":
+                            result = client.ReadInputRegisters(startAddress, len);
+                            break;
+                        case "Holding registers":
+                            result = client.ReadHoldingRegisters(startAddress, len);
+                            break;
+                    }
+
+                    Log.i(TAG, "Memory : " + Arrays.toString(result));
+                    Intent memoryReading = new Intent(ACTION_MEMORY_READ_RESPONSE);
+                    memoryReading.putExtra(
+                            EXTRA_MEMORY_ADDRESS_NUM,
+                            range(startAddress, addressQuantity)
+                    );
+                    memoryReading.putExtra(
+                            EXTRA_MEMORY_ADDRESS_VALUE,
+                            result
+                    );
+                    LocalBroadcastManager.getInstance(ModbusSlaveService.this).sendBroadcast(memoryReading);
+                } catch (ModbusException | IOException e) {
+                    e.printStackTrace();
+                }
+            });
+
         }
     };
 
@@ -96,11 +160,14 @@ public class ModbusSlaveService extends Service {
 
     public void startConnection(String serverAddress, int serverPort) {
         LocalBroadcastManager.getInstance(this).registerReceiver(
-                broadcastReceiver,
+                onSensorDataReady,
                 new IntentFilter(ACTION_SENSOR_BROADCAST));
+        LocalBroadcastManager.getInstance(this).registerReceiver(
+                onModbusMemoryReadRequest,
+                new IntentFilter(ACTION_MEMORY_READ_REQUEST)
+        );
 
         client = new ModbusClient(serverAddress, serverPort);
-        client.addSendDataChangedListener(() -> Log.i(TAG, "Send Data fired"));
 
         handlerThread = new HandlerThread(TAG);
         handlerThread.start();
@@ -169,7 +236,8 @@ public class ModbusSlaveService extends Service {
         super.onDestroy();
         if (listening) {
             handlerThread.quitSafely();
-            LocalBroadcastManager.getInstance(this).unregisterReceiver(broadcastReceiver);
+            LocalBroadcastManager.getInstance(this).unregisterReceiver(onSensorDataReady);
+            LocalBroadcastManager.getInstance(this).unregisterReceiver(onModbusMemoryReadRequest);
             try {
                 client.Disconnect();
             } catch (IOException e) {
