@@ -20,6 +20,8 @@ public class Utilities {
     public static final String ACTION_CONNECTING = TAG + ".CONNECT";
     public static final String ACTION_CONNECTED = TAG + ".CONNECTED";
     public static final String ACTION_DISCONNECT = TAG + ".DISCONNECT";
+    public static final String ACTION_SENSOR_ON = TAG + ".SENSOR_ON";
+    public static final String ACTION_SENSOR_OFF = TAG + ".SENSOR_OFF";
     public static final String ACTION_SENSOR_BROADCAST = TAG + ".SENSOR_BROADCAST";
     public static final String ACTION_MEMORY_READ_REQUEST = TAG + ".MEMORY_READ_REQUEST";
     public static final String ACTION_MEMORY_READ_RESPONSE = TAG + ".MEMORY_READ_RESPONSE";
@@ -66,7 +68,7 @@ public class Utilities {
     }
 
     public static float radianToDegree(float rad) {
-        return (float) ((Math.toDegrees(rad) + 360) % 360);
+        return (float) (((Math.toDegrees(rad) + 360) % 360) + 32767);
     }
 
     public static int[] range(int min, int len) {

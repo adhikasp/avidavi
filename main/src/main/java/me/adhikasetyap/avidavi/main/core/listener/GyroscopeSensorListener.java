@@ -19,6 +19,9 @@ public class GyroscopeSensorListener implements SensorEventListener {
 
     private String TAG = GyroscopeSensorListener.class.getName();
 
+    private long lastBroadcast = 0;
+    private long sensorBroadcastDelay;
+
     private boolean hasAcceleration;
     private boolean hasMagnetic;
 
@@ -32,7 +35,10 @@ public class GyroscopeSensorListener implements SensorEventListener {
 
     private OrientationFusedKalman orientationKalmanFusion;
 
-    public GyroscopeSensorListener() {
+    public GyroscopeSensorListener(int sensorBroadcastDelay) {
+        lastBroadcast = System.currentTimeMillis();
+        this.sensorBroadcastDelay = sensorBroadcastDelay;
+
         orientationKalmanFusion = new OrientationFusedKalman();
         orientationKalmanFusion.startFusion();
         meanFilter = new MeanFilter();
@@ -73,7 +79,12 @@ public class GyroscopeSensorListener implements SensorEventListener {
             for (int i = 0; i < fusedOrientation.length; i++) {
                 castedOrientation[i] = (int) Utilities.radianToDegree(fusedOrientation[i]);
             }
-            Utilities.broadcastSensorData(Sensor.TYPE_GYROSCOPE, castedOrientation);
+
+            long currentTime = System.currentTimeMillis();
+            if (currentTime - lastBroadcast > sensorBroadcastDelay) {
+                lastBroadcast = currentTime;
+                Utilities.broadcastSensorData(Sensor.TYPE_GYROSCOPE, castedOrientation);
+            }
         }
     }
 }

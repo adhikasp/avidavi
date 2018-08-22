@@ -17,8 +17,13 @@ import android.support.annotation.Nullable;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
+import com.opencsv.CSVWriter;
+
+import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.net.SocketTimeoutException;
+import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Objects;
 
@@ -51,6 +56,7 @@ public class ModbusSlaveService extends Service {
     public static final String EXTRA_SERVER_PORT = TAG + ".SERVER_PORT";
 
     SharedPreferences sharedPreferences;
+    CSVWriter csvWriter;
 
     private ModbusClient client;
     private SensorManagerService sensorManagerService;
@@ -87,6 +93,7 @@ public class ModbusSlaveService extends Service {
                     Log.d(TAG, "Value  : " + Arrays.toString(sensorValues));
                     for (int i = 0; i < sensorValues.length; i++) {
                         client.WriteSingleRegister(sentAddress + i, sensorValues[i]);
+                        writeToCSV(sensorName, String.valueOf(i), sensorValues[i]);
                     }
                 } catch (SocketTimeoutException e) {
                     restartConnection(false, 1, 1);
@@ -179,6 +186,7 @@ public class ModbusSlaveService extends Service {
                 client.setConnectionTimeout(5000);
                 Log.i(TAG, "Modbus slave is listening.");
                 listening = true;
+                setupCSVWriter();
 
                 Intent successfullyConnect = new Intent(ACTION_CONNECTED);
                 successfullyConnect.addCategory(CATEGORY_MODBUS);
@@ -248,6 +256,13 @@ public class ModbusSlaveService extends Service {
         if (sensorManagerService != null) {
             sensorManagerService.unbindService(sensorManagerConnection);
         }
+        if (csvWriter != null) {
+            try {
+                csvWriter.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     @Nullable
@@ -288,5 +303,41 @@ public class ModbusSlaveService extends Service {
             default:
                 return 0;
         }
+    }
+
+    private void setupCSVWriter() {
+        String baseDir = android.os.Environment.getExternalStorageDirectory().getAbsolutePath();
+        String fileName = "Data_Sensor.csv";
+        String filePath = baseDir + File.separator + fileName;
+        Log.i(TAG, "setupCSVWriter: " + baseDir);
+        File f = new File(filePath);
+        try {
+            if (f.exists() && !f.isDirectory()) {
+                FileWriter mFileWriter = new FileWriter(filePath, false);
+                csvWriter = new CSVWriter(mFileWriter);
+            } else {
+                csvWriter = new CSVWriter(new FileWriter(filePath));
+            }
+            String[] data = {"Timestamp", "Nama Sensor", "Tipe Sensor", "Nilai"};
+            csvWriter.writeNext(data);
+        }
+        catch (IOException ignored) {
+        }
+    }
+
+    private void writeToCSV(String sensorName, String type, int value) {
+//        String baseDir = android.os.Environment.getExternalStorageDirectory().getAbsolutePath();
+//        String fileName = "Data_Sensor.csv";
+//        String filePath = baseDir + File.separator + fileName;
+//        File f = new File(filePath);
+//        try {
+//            FileWriter mFileWriter = new FileWriter(filePath, true);
+//            FileWriter mFileWriter = new FileWriter(filePath, true);
+//            csvWriter = new CSVWriter(mFileWriter);
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+        String[] data = {String.valueOf(System.currentTimeMillis()), sensorName, type, String.valueOf(value)};
+        csvWriter.writeNext(data);
     }
 }

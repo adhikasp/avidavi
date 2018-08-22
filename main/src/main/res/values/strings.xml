@@ -1,8 +1,9 @@
 <resources>
     <!-- Setting default value -->
-    <string name="pref_default_accelerometer_address">5</string>
-    <string name="pref_default_gyroscope_address">1</string>
-    <string name="pref_default_proximity_address">4</string>
+    <string name="pref_default_sensor_broadcast_delay">1000</string>
+    <string name="pref_default_accelerometer_address">1</string>
+    <string name="pref_default_gyroscope_address">4</string>
+    <string name="pref_default_proximity_address">7</string>
 
     <string name="action_settings">Setting</string>
     <string name="action_connect">Connect</string>

@@ -1,14 +1,18 @@
 package me.adhikasetyap.avidavi.main;
 
+import android.Manifest;
+import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.hardware.Sensor;
 import android.hardware.SensorManager;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
@@ -26,6 +30,7 @@ import java.util.List;
 import java.util.Objects;
 
 import me.adhikasetyap.avidavi.main.core.ModbusSlaveService;
+import me.adhikasetyap.avidavi.main.core.utilities.SensorListAdapter;
 
 import static me.adhikasetyap.avidavi.main.core.ModbusSlaveService.EXTRA_SERVER_ADDRESS;
 import static me.adhikasetyap.avidavi.main.core.ModbusSlaveService.EXTRA_SERVER_PORT;
@@ -67,8 +72,7 @@ public class HomePageActivity extends AppCompatActivity {
                                 + ":" + intent.getIntExtra(EXTRA_SERVER_PORT, 502));
                 View connectedIcon = findViewById(R.id.connected_icon);
                 connectedIcon.setBackground(getDrawable(R.drawable.status_connected));
-            } else if (Objects.equals(intent.getAction(), ACTION_CONNECTED) &&
-                    intent.getCategories().contains(CATEGORY_SENSOR)) {
+            } else if (intent.getCategories().contains(CATEGORY_SENSOR)) {
                 String sensorType = intent.getStringExtra(EXTRA_SENSOR_TYPE);
                 String sensorStatus = intent.getStringExtra(EXTRA_SENSOR_STATUS);
                 for (HashMap<String, String> sensorItem : sensorList) {
@@ -122,10 +126,11 @@ public class HomePageActivity extends AppCompatActivity {
         // TODO add sensor icon
         String[] fromColumns = {EXTRA_SENSOR_TYPE, EXTRA_SENSOR_STATUS};
         int[] toColumns = {R.id.sensor_name, R.id.sensor_status};
-        sensorListAdapter = new SimpleAdapter(
+        sensorListAdapter = new SensorListAdapter(
                 this, sensorList, R.layout.sensor_list_item_view, fromColumns, toColumns);
         sensorListView.setAdapter(sensorListAdapter);
 
+        verifyStoragePermissions();
         connectToServer();
 
         IntentFilter filter = new IntentFilter();
@@ -220,5 +225,24 @@ public class HomePageActivity extends AppCompatActivity {
                     .append(System.getProperty("line.separator"));
         }
         Log.i(TAG, sensorText.toString());
+    }
+
+    private void verifyStoragePermissions() {
+        // Check if we have write permission
+        int permission = ActivityCompat.checkSelfPermission(
+                HomePageActivity.this, Manifest.permission.WRITE_EXTERNAL_STORAGE);
+
+        if (permission != PackageManager.PERMISSION_GRANTED) {
+            String[] PERMISSIONS_STORAGE = {
+                    Manifest.permission.READ_EXTERNAL_STORAGE,
+                    Manifest.permission.WRITE_EXTERNAL_STORAGE
+            };
+            // We don't have permission so prompt the user
+            ActivityCompat.requestPermissions(
+                    HomePageActivity.this,
+                    PERMISSIONS_STORAGE,
+                    1
+            );
+        }
     }
 }

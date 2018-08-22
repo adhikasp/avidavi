@@ -22,18 +22,25 @@
     <PreferenceCategory android:title="Sensor">
 
         <EditTextPreference
+            android:defaultValue="@string/pref_default_sensor_broadcast_delay"
+            android:inputType="number"
+            android:key="pref_key_sensor_broadcast_delay"
+            android:summary="Delay between sensor updating data"
+            android:title="Sensor broadcast delay (ms)" />
+
+        <EditTextPreference
             android:defaultValue="@string/pref_default_accelerometer_address"
             android:inputType="number"
             android:key="pref_key_accelerometer_address"
             android:summary="Register memory starting address where the sensor data would be sent to"
-            android:title="Gyroscope sent address" />
+            android:title="Accelerometer send address" />
 
         <EditTextPreference
             android:defaultValue="@string/pref_default_gyroscope_address"
             android:inputType="number"
             android:key="pref_key_gyroscope_address"
             android:summary="Register memory starting address where the sensor data would be sent to"
-            android:title="Gyroscope sent address" />
+            android:title="Gyroscope send address" />
 
         <EditTextPreference
             android:defaultValue="@string/pref_default_proximity_address"

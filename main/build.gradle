@@ -30,4 +30,5 @@ dependencies {
     implementation files('libs/EasyModbusJava.jar')
     implementation 'com.android.support:design:27.1.1'
     implementation 'com.github.KalebKE:FSensor:v1.2'
+    implementation 'com.opencsv:opencsv:4.0'
 }

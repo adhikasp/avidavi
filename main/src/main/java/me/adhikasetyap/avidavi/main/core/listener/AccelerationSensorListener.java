@@ -3,6 +3,7 @@ package me.adhikasetyap.avidavi.main.core.listener;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
+import android.util.Log;
 
 import com.kircherelectronics.fsensor.filter.averaging.MeanFilter;
 import com.kircherelectronics.fsensor.filter.gyroscope.fusion.kalman.OrientationFusedKalman;
@@ -19,6 +20,9 @@ public class AccelerationSensorListener implements SensorEventListener {
 
     private static final String TAG = AccelerationSensorListener.class.getName();
 
+    private long lastBroadcast = 0;
+    private long sensorBroadcastDelay;
+
     private float[] magnetic = new float[3];
     private float[] acceleration = new float[4];
     private float[] rotation = new float[3];
@@ -29,7 +33,10 @@ public class AccelerationSensorListener implements SensorEventListener {
     private float startTime = 0;
     private int count = 0;
 
-    public AccelerationSensorListener() {
+    public AccelerationSensorListener(int sensorBroadcastDelay) {
+        this.lastBroadcast = System.currentTimeMillis();
+        this.sensorBroadcastDelay = sensorBroadcastDelay;
+
         meanFilter = new MeanFilter();
         orientationFusedKalman = new OrientationFusedKalman();
         linearAccelerationFusion = new LinearAccelerationFusion(orientationFusedKalman);
@@ -41,10 +48,14 @@ public class AccelerationSensorListener implements SensorEventListener {
         if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
             System.arraycopy(event.values, 0, acceleration, 0, event.values.length);
             processAcceleration(linearAccelerationFusion.filter(acceleration));
-            Utilities.broadcastSensorData(
-                    Sensor.TYPE_ACCELEROMETER,
-                    convertAccelerationToDM(acceleration)
-            );
+            long currentTime = System.currentTimeMillis();
+            if (currentTime - lastBroadcast > sensorBroadcastDelay) {
+                lastBroadcast = currentTime;
+                Utilities.broadcastSensorData(
+                        Sensor.TYPE_ACCELEROMETER,
+                        convertAccelerationToDM(acceleration)
+                );
+            }
         } else if (event.sensor.getType() == Sensor.TYPE_MAGNETIC_FIELD) {
             System.arraycopy(magnetic, 0, this.magnetic, 0, magnetic.length);
         } else if (event.sensor.getType() == Sensor.TYPE_GYROSCOPE) {
