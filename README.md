@@ -29,10 +29,10 @@ as a control device.
 
 ## Architecture
 
-![android diagram](https://i.imgur.com/LpM0KXk.jpg)
+![android diagram](https://i.imgur.com/KJXzQGw.png)
 
 ## Screenshot
 
 ![homepage screenshot](https://i.imgur.com/x05n3IA.jpg)
 ![memory read screenshot](https://i.imgur.com/Vmequur.jpg)
-![setting screenshot](https://i.imgur.com/MAhmZAW.jpg)
+![setting screenshot](https://i.imgur.com/h86M39e.jpg)
